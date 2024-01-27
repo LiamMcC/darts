@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home</title>
+</head>
+<body>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+
+  <a href="/creategame">Make A Game</a>
+  <hr>
+  <form id="joinGameForm" method="get">
+    <label for="gameId">Game Number:</label>
+    <input type="number" id="gameId" name="gameId" required>
+    <button type="submit">Join A Game</button>
+</form>
+
+<script>
+    document.getElementById('joinGameForm').addEventListener('submit', function(event) {
+        event.preventDefault();  // Prevent the default form submission
+
+        // Get the value from the textbox
+        let gameId = parseInt(document.getElementById('gameId').value);
+
+        // Set the entire URL dynamically
+        window.location.href = "/game/" + parseInt(gameId) + "?gameId=" + parseInt(gameId);
+    });
+</script>
+</body>
+</html>

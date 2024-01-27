@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game</title>
+  <style>
+    .active-player { color: red; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+</head>
+<body>
+  <h2>Current Users</h2>
+  <button id="changeColorBtn">Change Color</button>
+  <hr>
+  <ul id="playerList">
+    <% if (result.length === 0) { %>
+      <li>There Are No Players In This Game</li>
+    <% } else { %>
+      <% result.forEach(function (player, index) { %>
+        <li class="playerItem">
+          EJS Name:
+          <span class="playerName" data-username="<%= player.uname %>" data-index="<%= index %>" style="<%= index === 0 ? 'color: red;' : '' %>">
+            <%= player.uname %>
+          </span>
+          <div class="textBoxes" style="<%= index === 0 ? '' : 'display: none;' %>">
+            <input type="text" class="textBox" placeholder="Text 1">
+            <input type="text" class="textBox" placeholder="Text 2">
+            <input type="text" class="textBox" placeholder="Text 3">
+            <span class="total">Total: 0</span>
+          </div>
+        </li>
+      <% }); %>
+    <% } %>
+  </ul>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.2/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    let currentHighlightedIndex = 0;
+
+    socket.on('playerJoined', (data) => {
+      const playerList = document.getElementById('playerList');
+      const listItem = document.createElement('li');
+      listItem.innerHTML = `
+        EJS Name:
+        <span class="playerName" data-username="${data.username}" data-index="${currentHighlightedIndex}" style="color: black;">
+          ${data.username}
+        </span>
+        <div class="textBoxes" style="display: none;">
+          <input type="text" class="textBox" placeholder="Text 1">
+          <input type="text" class="textBox" placeholder="Text 2">
+          <input type="text" class="textBox" placeholder="Text 3">
+          <div class="total">Total: 0</div>
+        </div>
+      `;
+      playerList.appendChild(listItem);
+
+      // Update the currentHighlightedIndex for the newly joined player
+      currentHighlightedIndex = (currentHighlightedIndex + 1) % (result.length + 1);
+    });
+
+    document.getElementById('changeColorBtn').addEventListener('click', () => {
+      const playerNames = document.querySelectorAll('.playerName');
+      const textBoxes = document.querySelectorAll('.textBox');
+      const totalDivs = document.querySelectorAll('.total');
+      
+      // Reset color for all players
+      playerNames.forEach(playerName => {
+        playerName.style.color = 'black';
+      });
+
+      // Reset content for all text boxes and total divs
+      textBoxes.forEach(textBox => {
+        textBox.value = '';
+      });
+
+      totalDivs.forEach(totalDiv => {
+        totalDiv.textContent = 'Total: 0';
+      });
+
+      // Highlight the next player in rotation
+      currentHighlightedIndex = (currentHighlightedIndex + 1) % playerNames.length;
+      const highlightedPlayer = playerNames[currentHighlightedIndex];
+      highlightedPlayer.style.color = 'red';
+
+      // Display the text boxes for the highlighted player
+      const highlightedTextBoxes = textBoxes[currentHighlightedIndex];
+      highlightedTextBoxes.style.display = 'block';
+
+      // Broadcast the color change event to all clients
+      socket.emit('changeColor', { index: currentHighlightedIndex });
+    });
+
+    // Listen for the color change event from the server
+    socket.on('colorChanged', (data) => {
+      const playerNames = document.querySelectorAll('.playerName');
+      const textBoxes = document.querySelectorAll('.textBox');
+      const totalDivs = document.querySelectorAll('.total');
+      
+      // Reset color for all players
+      playerNames.forEach(playerName => {
+        playerName.style.color = 'black';
+      });
+
+      // Reset content for all text boxes and total divs
+      textBoxes.forEach(textBox => {
+        textBox.value = '';
+      });
+
+      totalDivs.forEach(totalDiv => {
+        totalDiv.textContent = 'Total: 0';
+      });
+
+      // Highlight the player at the specified index
+      playerNames[data.index].style.color = 'red';
+      currentHighlightedIndex = data.index;
+
+      // Display the text boxes for the highlighted player
+      const highlightedTextBoxes = textBoxes[currentHighlightedIndex];
+      highlightedTextBoxes.style.display = 'block';
+    });
+
+    // Listen for input events on text boxes
+    document.addEventListener('input', (event) => {
+      if (event.target.classList.contains('textBox')) {
+        updateTotal(event.target);
+      }
+    });
+
+    // Function to update the total based on the values in the text boxes
+    function updateTotal(textBox) {
+      const textBoxes = document.querySelectorAll('.textBox');
+      const totalDivs = document.querySelectorAll('.total');
+      let total = 0;
+
+      // Calculate the total from all text boxes
+      textBoxes.forEach(textBox => {
+        const value = parseFloat(textBox.value) || 0;
+        total += value;
+
+        // Emit the 'updateTotal' event to the server
+  socket.emit('updateTotal', { index: currentHighlightedIndex, total });
+      });
+
+      // Update the total in the corresponding div
+      const totalDiv = totalDivs[currentHighlightedIndex];
+      totalDiv.textContent = `Total: ${total}`;
+    }
+
+
+    // After the 'updateTotal' function
+socket.on('totalUpdated', (data) => {
+  const totalDivs = document.querySelectorAll('.total');
+  const totalDiv = totalDivs[data.index];
+  totalDiv.textContent = `Total: ${data.total}`;
+});
+  </script>
+</body>
+</html>
